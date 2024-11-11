@@ -339,11 +339,13 @@ class $modelName extends BaseModel
     {
         $baseModelPath = app_path('Models/BaseModel.php');
 
+        // Verifica se o BaseModel já existe para evitar sobrescrita
         if (file_exists($baseModelPath)) {
             $this->info("O arquivo BaseModel.php já existe em: $baseModelPath");
             return;
         }
 
+        // Conteúdo do BaseModel
         $baseModelContent = <<<'EOD'
 <?php
 
@@ -395,43 +397,38 @@ abstract class BaseModel extends Model
      */
     protected function applyOperator($query, $field, $value, $method = 'where')
     {
-        if (Str::endsWith($field, '_like')) {
-            $actualField = Str::before($field, '_like');
-            $query->$method($actualField, 'LIKE', '%' . $value . '%');
-        } elseif (Str::endsWith($field, '_gt')) {
-            $actualField = Str::before($field, '_gt');
-            $query->$method($actualField, '>', $value);
-        } elseif (Str::endsWith($field, '_lt')) {
-            $actualField = Str::before($field, '_lt');
-            $query->$method($actualField, '<', $value);
-        } elseif (Str::endsWith($field, '_gte')) {
-            $actualField = Str::before($field, '_gte');
-            $query->$method($actualField, '>=', $value);
-        } elseif (Str::endsWith($field, '_lte')) {
-            $actualField = Str::before($field, '_lte');
-            $query->$method($actualField, '<=', $value);
-        } elseif (Str::endsWith($field, '_in')) {
-            $actualField = Str::before($field, '_in');
-            $query->$methodIn($actualField, explode(',', $value));
-        } elseif (Str::endsWith($field, '_not_in')) {
-            $actualField = Str::before($field, '_not_in');
-            $query->$methodNotIn($actualField, explode(',', $value));
-        } elseif (Str::endsWith($field, '_null')) {
-            $actualField = Str::before($field, '_null');
-            $query->$method($actualField, '=', null);
-        } elseif (Str::endsWith($field, '_not_null')) {
-            $actualField = Str::before($field, '_not_null');
-            $query->$method($actualField, '!=', null);
-        } elseif (Str::endsWith($field, '_between')) {
+        $operators = [
+            '_like'      => ['operator' => 'LIKE', 'value' => '%' . $value . '%'],
+            '_gt'        => ['operator' => '>', 'value' => $value],
+            '_lt'        => ['operator' => '<', 'value' => $value],
+            '_gte'       => ['operator' => '>=', 'value' => $value],
+            '_lte'       => ['operator' => '<=', 'value' => $value],
+            '_in'        => ['method' => $method . 'In', 'value' => explode(',', $value)],
+            '_not_in'    => ['method' => $method . 'NotIn', 'value' => explode(',', $value)],
+            '_null'      => ['operator' => '=', 'value' => null],
+            '_not_null'  => ['operator' => '!=', 'value' => null],
+        ];
+
+        foreach ($operators as $suffix => $operation) {
+            if (Str::endsWith($field, $suffix)) {
+                $actualField = Str::before($field, $suffix);
+                $methodToApply = $operation['method'] ?? $method;
+                $operator = $operation['operator'] ?? null;
+                $query->$methodToApply($actualField, $operator, $operation['value']);
+                return;
+            }
+        }
+
+        if (Str::endsWith($field, '_between')) {
             $actualField = Str::before($field, '_between');
             $range = explode(',', $value);
             if (count($range) === 2) {
-                $query->$methodBetween($actualField, [$range[0], $range[1]]);
+                $query->$method . 'Between'($actualField, [$range[0], $range[1]]);
             }
-        } else {
-            // Condição de igualdade padrão
-            $query->$method($field, '=', $value);
+            return;
         }
+
+        $query->$method($field, '=', $value);
     }
 }
 EOD;
