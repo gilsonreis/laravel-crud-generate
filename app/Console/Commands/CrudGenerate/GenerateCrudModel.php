@@ -365,12 +365,8 @@ abstract class BaseModel extends Model
      */
     public function scopeApplyFilters($query, array $filters)
     {
-        // Verifica se o nome do modelo está presente como chave
-        $modelFilters = $filters[static::class] ?? [];
-
-        foreach ($modelFilters as $field => $value) {
+        foreach ($filters as $field => $value) {
             if (Str::startsWith($field, '_or')) {
-                // Filtro OR - espera um array de condições
                 $query->where(function ($q) use ($value) {
                     foreach ($value as $orCondition) {
                         foreach ($orCondition as $orField => $orValue) {
@@ -379,7 +375,6 @@ abstract class BaseModel extends Model
                     }
                 });
             } else {
-                // Condição padrão para AND e operadores de comparação
                 $this->applyOperator($query, $field, $value, 'where');
             }
         }
