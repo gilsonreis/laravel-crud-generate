@@ -11,14 +11,10 @@ class ProductCreateAction extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly CreateProductUseCase $useCase
-    ) {}
-
-    public function __invoke(ProductRequest $request)
+    public function __invoke(ProductRequest $request, CreateProductUseCase $useCase)
     {
         try {
-            $result = $this->useCase->handle($request->validated());
+            $result = $useCase->handle($request->validated());
             return $this->successResponse($result);
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage());

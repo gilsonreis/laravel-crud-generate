@@ -11,14 +11,10 @@ class ProductUpdateAction extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly UpdateProductUseCase $useCase
-    ) {}
-
-    public function __invoke(ProductRequest $request, int $id)
+    public function __invoke(ProductRequest $request, UpdateProductUseCase $useCase, int $id)
     {
         try {
-            $result = $this->useCase->handle($id, $request->validated());
+            $result = $useCase->handle($id, $request->validated());
             return $this->successResponse($result);
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage());

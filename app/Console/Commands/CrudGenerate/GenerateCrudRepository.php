@@ -35,8 +35,10 @@ class GenerateCrudRepository extends Command
             File::makeDirectory(app_path("Repositories/{$directory}"), 0755, true);
         }
 
+        $this->generateFilter();
+        $this->generatePagination();
+
         if ($modelName) {
-            $this->generateFilter($modelName, $filters);
             $this->generateInterfaceWithCrud($repositoryName, $modelName, $interfacePath);
             $this->generateRepositoryWithCrud($repositoryName, $modelName, $repositoryPath, $filters);
         } else {
@@ -70,12 +72,12 @@ interface {$repositoryName}Interface
 namespace App\Repositories\\" . Str::studly($modelName) . ";
 
 use Illuminate\\Pagination\\LengthAwarePaginator;
-use App\\Types\\Pagination;
-use App\\Filters\\" . Str::studly($modelName) . "Filter;
+use App\\Support\\Pagination;
+use App\\Support\\Filter;
 
 interface {$repositoryName}Interface
 {
-    public function getAll(Pagination \$pagination, {$modelName}Filter \$filter): LengthAwarePaginator|array;
+    public function getAll(Pagination \$pagination, Filter \$filter): LengthAwarePaginator|array;
 
     public function find(int \$id);
 
@@ -89,100 +91,25 @@ interface {$repositoryName}Interface
         File::put($interfacePath, $interfaceContent);
     }
 
-    private function generateFilter($modelName, $filters = null)
-    {
-        $filterName = "{$modelName}Filter";
-        $filterPath = app_path("Filters/{$filterName}.php");
-
-        if (!File::exists(app_path('Filters'))) {
-            File::makeDirectory(app_path('Filters'), 0755, true);
-        }
-
-        $baseFilterPath = app_path('Filters/BaseFilter.php');
-        if (!File::exists($baseFilterPath)) {
-            $this->generateBaseFilter();
-        }
-
-        $filters = $this->getFilters($modelName, $filters);
-
-        $constructorParams = '';
-        $gettersSetters = '';
-
-        foreach ($filters as $filter) {
-            $studlyFilter = Str::studly($filter);
-
-            $constructorParams .= "        private ?string \$$filter,\n";
-
-            // Define getter e setter
-            $gettersSetters .= "
-    public function get{$studlyFilter}(): ?string
-    {
-        return \$this->$filter;
-    }
-
-    public function set{$studlyFilter}(?string \$$filter): self
-    {
-        \$this->$filter = \$$filter;
-        return \$this;
-    }\n";
-        }
-
-        // Define a estrutura da classe de filtro estendendo BaseFilter
-        $filterContent = "<?php
-
-namespace App\Filters;
-
-class {$filterName} extends BaseFilter
-{
-    public function __construct(
-$constructorParams
-    ) {
-        parent::__construct();
-
-    }
-
-$gettersSetters
-
-    public function toArray(): array
-    {
-        return [
-            ...parent::toArray(),
-" . implode('', array_map(fn($filter) => "            '$filter' => \$this->get" . Str::studly($filter) . "(),\n", $filters)) . '        ];
-    }
-}';
-
-        File::put($filterPath, $filterContent);
-    }
-
     private function generateRepositoryWithCrud($repositoryName, $modelName, $repositoryPath, $filters)
     {
-        $filters = $this->getFilters($modelName, $filters);
-
-        $filterConditions = '';
-        foreach ($filters as $filter) {
-            $studlyFilter = Str::studly($filter);
-            $filterConditions .= "
-        if (\$filter?->get{$studlyFilter}()) {
-            \$query->orWhere('$filter', 'like', '%' . \$filter->get{$studlyFilter}() . '%');
-        }";
-        }
-
+        // Ignorar a criação do filtro específico do modelo
         $repositoryContent = "<?php
 
 namespace App\Repositories\\" . Str::studly($modelName) . ";
 
 use App\Models\\$modelName;
 use Illuminate\\Pagination\\LengthAwarePaginator;
-use App\\Types\\Pagination;
-use App\\Filters\\{$modelName}Filter;
+use App\\Support\\Pagination;
+use App\\Support\\Filter;
 
 class {$repositoryName} implements {$repositoryName}Interface
 {
-    public function getAll(Pagination \$pagination, {$modelName}Filter \$filter): LengthAwarePaginator|array
+    public function getAll(Pagination \$pagination, Filter \$filter): LengthAwarePaginator|array
     {
         \$query = {$modelName}::query();
 
-        $filterConditions
+        \$query->applyFilters(\$filter->getFilters());
 
         \$query->orderBy(\$filter->getOrderColumn(), \$filter->getOrderDirection());
 
@@ -191,10 +118,10 @@ class {$repositoryName} implements {$repositoryName}Interface
                 perPage: \$pagination->getPerPage(),
                 columns: \$filter->getColumns(),
                 page: \$pagination->getPage()
-            );
+            )->toArray();
         }
 
-        return \$query->get(\$filter->getColumns())?->toArray() ?? [];
+        return \$query->get(\$filter->getColumns())->toArray();
     }
 
     public function find(int \$id): ?$modelName
@@ -242,15 +169,12 @@ class {$repositoryName} implements {$repositoryName}Interface
         if (File::exists($serviceProviderPath)) {
             $providerContent = File::get($serviceProviderPath);
 
-            // Define as linhas de importação que queremos adicionar
             $interfaceImport = "use App\\Repositories\\{$directory}\\{$repositoryName}Interface;";
             $repositoryImport = "use App\\Repositories\\{$directory}\\{$repositoryName};";
 
-            // Expressão regular para verificar a existência dos imports
             $interfacePattern = "/^use\s+App\\\\Repositories\\\\{$directory}\\\\{$repositoryName}Interface;/m";
             $repositoryPattern = "/^use\s+App\\\\Repositories\\\\{$directory}\\\\{$repositoryName};/m";
 
-            // Adiciona as linhas de importação logo após o namespace, caso não existam
             if (!preg_match($interfacePattern, $providerContent) || !preg_match($repositoryPattern, $providerContent)) {
                 $providerContent = preg_replace(
                     '/^namespace\s+[^\n]+;\n/m',
@@ -260,14 +184,11 @@ class {$repositoryName} implements {$repositoryName}Interface
                 );
             }
 
-            // Define o bind statement sem o namespace completo
             $bindStatement = "\$this->app->bind({$repositoryName}Interface::class, {$repositoryName}::class);";
 
-            // Expressão regular para verificar o bind
             $pattern = "/bind\(\s*{$repositoryName}Interface::class\s*,\s*{$repositoryName}::class\s*\)/";
 
             if (!preg_match($pattern, $providerContent)) {
-                // Insere o bind no método register
                 $providerContent = str_replace(
                     "public function register(): void\n    {\n",
                     "public function register(): void\n    {\n        $bindStatement \n",
@@ -301,27 +222,37 @@ class {$repositoryName} implements {$repositoryName}Interface
         return $filters;
     }
 
-    private function generateBaseFilter()
+    private function generateFilter()
     {
-        $baseFilterContent = "<?php
+        $directoryPath = app_path('Support');
+        File::ensureDirectoryExists($directoryPath);
 
-namespace App\Filters;
+        $filterPath = "{$directoryPath}/Filter.php";
 
-abstract class BaseFilter
+        if (File::exists($filterPath)) {
+            $this->info('O arquivo Filter.php já existe.');
+            return;
+        }
+
+        $filterContent = "<?php
+
+namespace App\Support;
+
+class Filter
 {
     public function __construct(
         private ?array \$columns = ['*'],
         private ?string \$orderColumn = 'created_at',
         private ?string \$orderDirection = 'asc',
-    ) {
-    }
+        private array \$filters = []
+    ) {}
 
     public function getColumns(): ?array
     {
         return \$this->columns;
     }
 
-    public function setColumns(?array \$columns): BaseFilter
+    public function setColumns(array \$columns): self
     {
         \$this->columns = \$columns;
         return \$this;
@@ -332,7 +263,7 @@ abstract class BaseFilter
         return \$this->orderColumn;
     }
 
-    public function setOrderColumn(?string \$orderColumn): BaseFilter
+    public function setOrderColumn(string \$orderColumn): self
     {
         \$this->orderColumn = \$orderColumn;
         return \$this;
@@ -343,28 +274,98 @@ abstract class BaseFilter
         return \$this->orderDirection;
     }
 
-    public function setOrderDirection(?string \$orderDirection): BaseFilter
+    public function setOrderDirection(string \$orderDirection): self
     {
         if (!in_array(\$orderDirection, ['asc', 'desc'])) {
-            throw new \DomainException('OrderDirection precisa ser \"asc\" ou \"desc\"', 422);
+            throw new \\DomainException('OrderDirection precisa ser \"asc\" ou \"desc\"');
         }
-
         \$this->orderDirection = \$orderDirection;
         return \$this;
+    }
+
+    public function getFilters(): array
+    {
+        return \$this->filters;
+    }
+
+    public function setFilters(array \$filters): self
+    {
+        \$this->filters = \$filters;
+        return \$this;
+    }
+}";
+
+        File::put($filterPath, $filterContent);
+        $this->info('Filter.php criado com sucesso.');
+    }
+
+    private function generatePagination()
+    {
+        $directoryPath = app_path('Support');
+        File::ensureDirectoryExists($directoryPath);
+
+        $paginationPath = "{$directoryPath}/Pagination.php";
+
+        if (File::exists($paginationPath)) {
+            $this->info('O arquivo Pagination.php já existe.');
+            return;
+        }
+
+        $paginationContent = "<?php
+
+namespace App\Support;
+
+class Pagination
+{
+    public function __construct(private int \$page = 1, private int \$perPage = 15, private ?bool \$paginate = true)
+    {
+    }
+
+    public function getPage(): int
+    {
+        return \$this->page;
+    }
+
+    public function setPage(int \$page): Pagination
+    {
+        \$this->page = \$page;
+        return \$this;
+    }
+
+    public function getPerPage(): int
+    {
+        return \$this->perPage;
+    }
+
+    public function setPerPage(int \$perPage): Pagination
+    {
+        \$this->perPage = \$perPage;
+        return \$this;
+    }
+
+    public function setPaginate(bool \$setPaginate): Pagination
+    {
+        \$this->paginate = \$setPaginate;
+        return \$this;
+    }
+
+    public function hasPaginate(): bool
+    {
+        return \$this->paginate;
     }
 
     public function toArray(): array
     {
         return [
-            'columns' => \$this->getColumns(),
-            'orderColumn' => \$this->getOrderColumn(),
-            'orderDirection' => \$this->getOrderDirection()
+            'page' => \$this->getPage(),
+            'per_page' => \$this->getPerPage(),
+            'paginate' => \$this->hasPaginate(),
         ];
     }
 }";
 
-        File::put(app_path('Filters/BaseFilter.php'), $baseFilterContent);
-        $this->info('BaseFilter criado com sucesso.');
+        File::put($paginationPath, $paginationContent);
+        $this->info('Pagination.php criado com sucesso.');
     }
 
 }

@@ -335,39 +335,109 @@ class $modelName extends BaseModel
         return $modelTemplate;
     }
 
-    protected function createBaseModel($path)
+    protected function createBaseModel()
     {
-        $baseModelContent = <<<EOD
+        $baseModelPath = app_path('Models/BaseModel.php');
+
+        if (file_exists($baseModelPath)) {
+            $this->info("O arquivo BaseModel.php já existe em: $baseModelPath");
+            return;
+        }
+
+        $baseModelContent = <<<'EOD'
 <?php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Str;
 
 abstract class BaseModel extends Model
 {
-    protected \$guarded = [];
-
-    protected \$casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-
-    public static function boot()
+    /**
+     * Aplica filtros à consulta com base nos parâmetros fornecidos.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param array $filters
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeApplyFilters($query, array $filters)
     {
-        parent::boot();
+        // Verifica se o nome do modelo está presente como chave
+        $modelFilters = $filters[static::class] ?? [];
 
-        if (in_array('deleted_at', (new static())->getFillable())) {
-            static::addGlobalScope(new SoftDeletingScope);
+        foreach ($modelFilters as $field => $value) {
+            if (Str::startsWith($field, '_or')) {
+                // Filtro OR - espera um array de condições
+                $query->where(function ($q) use ($value) {
+                    foreach ($value as $orCondition) {
+                        foreach ($orCondition as $orField => $orValue) {
+                            $this->applyOperator($q, $orField, $orValue, 'orWhere');
+                        }
+                    }
+                });
+            } else {
+                // Condição padrão para AND e operadores de comparação
+                $this->applyOperator($query, $field, $value, 'where');
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Aplica o operador apropriado ao campo e valor fornecidos.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $field
+     * @param mixed $value
+     * @param string $method
+     */
+    protected function applyOperator($query, $field, $value, $method = 'where')
+    {
+        if (Str::endsWith($field, '_like')) {
+            $actualField = Str::before($field, '_like');
+            $query->$method($actualField, 'LIKE', '%' . $value . '%');
+        } elseif (Str::endsWith($field, '_gt')) {
+            $actualField = Str::before($field, '_gt');
+            $query->$method($actualField, '>', $value);
+        } elseif (Str::endsWith($field, '_lt')) {
+            $actualField = Str::before($field, '_lt');
+            $query->$method($actualField, '<', $value);
+        } elseif (Str::endsWith($field, '_gte')) {
+            $actualField = Str::before($field, '_gte');
+            $query->$method($actualField, '>=', $value);
+        } elseif (Str::endsWith($field, '_lte')) {
+            $actualField = Str::before($field, '_lte');
+            $query->$method($actualField, '<=', $value);
+        } elseif (Str::endsWith($field, '_in')) {
+            $actualField = Str::before($field, '_in');
+            $query->$methodIn($actualField, explode(',', $value));
+        } elseif (Str::endsWith($field, '_not_in')) {
+            $actualField = Str::before($field, '_not_in');
+            $query->$methodNotIn($actualField, explode(',', $value));
+        } elseif (Str::endsWith($field, '_null')) {
+            $actualField = Str::before($field, '_null');
+            $query->$method($actualField, '=', null);
+        } elseif (Str::endsWith($field, '_not_null')) {
+            $actualField = Str::before($field, '_not_null');
+            $query->$method($actualField, '!=', null);
+        } elseif (Str::endsWith($field, '_between')) {
+            $actualField = Str::before($field, '_between');
+            $range = explode(',', $value);
+            if (count($range) === 2) {
+                $query->$methodBetween($actualField, [$range[0], $range[1]]);
+            }
+        } else {
+            // Condição de igualdade padrão
+            $query->$method($field, '=', $value);
         }
     }
 }
 EOD;
 
-        // Cria o BaseModel automaticamente
-        File::put($path, $baseModelContent);
-
-        $this->info('BaseModel criado com sucesso em ' . $path);
+        // Cria o arquivo BaseModel.php com o conteúdo definido
+        file_put_contents($baseModelPath, $baseModelContent);
+        $this->info("BaseModel.php criado com sucesso em: $baseModelPath");
     }
 }

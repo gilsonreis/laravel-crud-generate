@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Types;
+namespace App\Support;
 
 class Pagination
 {
-    public function __construct(private int $page, private int $perPage, private ?bool $paginate = true)
+    public function __construct(private int $page = 1, private int $perPage = 15, private ?bool $paginate = true)
     {
     }
 
@@ -49,5 +49,4 @@ class Pagination
             'paginate' => $this->hasPaginate(),
         ];
     }
-
 }

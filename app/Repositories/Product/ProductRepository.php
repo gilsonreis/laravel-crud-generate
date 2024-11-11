@@ -4,28 +4,16 @@ namespace App\Repositories\Product;
 
 use App\Models\Product;
 use Illuminate\Pagination\LengthAwarePaginator;
-use App\Types\Pagination;
-use App\Filters\ProductFilter;
+use App\Support\Pagination;
+use App\Support\Filter;
 
 class ProductRepository implements ProductRepositoryInterface
 {
-    public function getAll(Pagination $pagination, ProductFilter $filter): LengthAwarePaginator|array
+    public function getAll(Pagination $pagination, Filter $filter): LengthAwarePaginator|array
     {
         $query = Product::query();
 
-
-        if ($filter?->getName()) {
-            $query->orWhere('name', 'like', '%' . $filter->getName() . '%');
-        }
-        if ($filter?->getDescription()) {
-            $query->orWhere('description', 'like', '%' . $filter->getDescription() . '%');
-        }
-        if ($filter?->getTags()) {
-            $query->orWhere('tags', 'like', '%' . $filter->getTags() . '%');
-        }
-        if ($filter?->getNameSlug()) {
-            $query->orWhere('name_slug', 'like', '%' . $filter->getNameSlug() . '%');
-        }
+        $query->applyFilters($filter->getFilters());
 
         $query->orderBy($filter->getOrderColumn(), $filter->getOrderDirection());
 
@@ -34,10 +22,10 @@ class ProductRepository implements ProductRepositoryInterface
                 perPage: $pagination->getPerPage(),
                 columns: $filter->getColumns(),
                 page: $pagination->getPage()
-            );
+            )->toArray();
         }
 
-        return $query->get($filter->getColumns())?->toArray() ?? [];
+        return $query->get($filter->getColumns())->toArray();
     }
 
     public function find(int $id): ?Product

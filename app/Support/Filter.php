@@ -1,22 +1,22 @@
 <?php
 
-namespace App\Filters;
+namespace App\Support;
 
-abstract class BaseFilter
+class Filter
 {
     public function __construct(
         private ?array $columns = ['*'],
         private ?string $orderColumn = 'created_at',
         private ?string $orderDirection = 'asc',
-    ) {
-    }
+        private array $filters = []
+    ) {}
 
     public function getColumns(): ?array
     {
         return $this->columns;
     }
 
-    public function setColumns(?array $columns): BaseFilter
+    public function setColumns(array $columns): self
     {
         $this->columns = $columns;
         return $this;
@@ -27,7 +27,7 @@ abstract class BaseFilter
         return $this->orderColumn;
     }
 
-    public function setOrderColumn(?string $orderColumn): BaseFilter
+    public function setOrderColumn(string $orderColumn): self
     {
         $this->orderColumn = $orderColumn;
         return $this;
@@ -38,22 +38,23 @@ abstract class BaseFilter
         return $this->orderDirection;
     }
 
-    public function setOrderDirection(?string $orderDirection): BaseFilter
+    public function setOrderDirection(string $orderDirection): self
     {
         if (!in_array($orderDirection, ['asc', 'desc'])) {
-            throw new \DomainException('OrderDirection precisa ser "asc" ou "desc"', 422);
+            throw new \DomainException('OrderDirection precisa ser "asc" ou "desc"');
         }
-
         $this->orderDirection = $orderDirection;
         return $this;
     }
 
-    public function toArray(): array
+    public function getFilters(): array
     {
-        return [
-            'columns' => $this->getColumns(),
-            'orderColumn' => $this->getOrderColumn(),
-            'orderDirection' => $this->getOrderDirection()
-        ];
+        return $this->filters;
+    }
+
+    public function setFilters(array $filters): self
+    {
+        $this->filters = $filters;
+        return $this;
     }
 }

@@ -3,12 +3,12 @@
 namespace App\Repositories\Product;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use App\Types\Pagination;
-use App\Filters\ProductFilter;
+use App\Support\Pagination;
+use App\Support\Filter;
 
 interface ProductRepositoryInterface
 {
-    public function getAll(Pagination $pagination, ProductFilter $filter): LengthAwarePaginator|array;
+    public function getAll(Pagination $pagination, Filter $filter): LengthAwarePaginator|array;
 
     public function find(int $id);
 

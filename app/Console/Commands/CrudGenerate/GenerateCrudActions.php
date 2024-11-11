@@ -102,8 +102,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use {$useCasesNamespace}\\{$useCase};
 use App\Traits\ApiResponser;
-use App\Types\Pagination;
-use App\Filters\\{$modelName}Filter;
+use App\Support\Pagination;
+use App\Support\Filter;
 
 class {$actionName} extends Controller
 {
@@ -113,10 +113,28 @@ class {$actionName} extends Controller
         private readonly {$useCase} \$useCase
     ) {}
 
-    public function __invoke(Request \$request, Pagination \$pagination, {$modelName}Filter \$filter)
+    public function __invoke(Request \$request)
     {
         try {
+            \$columns = \$request->get('columns') ? explode(',', \$request->get('columns')) : ['*'];
+            \$orderColumn = \$request->get('orderColumn', 'created_at');
+            \$orderDirection = \$request->get('orderDirection', 'asc');
+            \$modelFilters = \$request->get('{$modelName}', []);
+
+            \$filter = new Filter(
+                columns: \$columns,
+                orderColumn: \$orderColumn,
+                orderDirection: \$orderDirection,
+                filters: \$modelFilters
+            );
+
+            \$pagination = new Pagination(
+                page: \$request->get('page', 1),
+                perPage: \$request->get('perPage', 10)
+            );
+
             \$result = \$this->useCase->handle(\$pagination, \$filter);
+
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -149,14 +167,10 @@ class {$actionName} extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly {$useCase} \$useCase
-    ) {}
-
-    public function __invoke(Request \$request, int \$id)
+    public function __invoke(Request \$request, {$useCase} \$useCase, int \$id)
     {
         try {
-            \$result = \$this->useCase->handle(\$id);
+            \$result = \$useCase->handle(\$id);
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -195,14 +209,10 @@ class {$actionName} extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly {$useCase} \$useCase
-    ) {}
-
-    public function __invoke({$formRequest} \$request)
+    public function __invoke({$formRequest} \$request, {$useCase} \$useCase)
     {
         try {
-            \$result = \$this->useCase->handle(\$request->validated());
+            \$result = \$useCase->handle(\$request->validated());
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -241,14 +251,10 @@ class {$actionName} extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly {$useCase} \$useCase
-    ) {}
-
-    public function __invoke({$formRequest} \$request, int \$id)
+    public function __invoke({$formRequest} \$request, {$useCase} \$useCase, int \$id)
     {
         try {
-            \$result = \$this->useCase->handle(\$id, \$request->validated());
+            \$result = \$useCase->handle(\$id, \$request->validated());
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -281,14 +287,10 @@ class {$actionName} extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly {$useCase} \$useCase
-    ) {}
-
-    public function __invoke(Request \$request, int \$id)
+    public function __invoke(Request \$request, {$useCase} \$useCase, int \$id)
     {
         try {
-            \$result = \$this->useCase->handle(\$id);
+            \$result = \$useCase->handle(\$id);
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());

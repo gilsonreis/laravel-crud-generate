@@ -3,8 +3,8 @@
 namespace App\UseCases\Product;
 
 use App\Repositories\Product\ProductRepositoryInterface;
-use App\Types\Pagination;
-use App\Filters\ProductFilter;
+use App\Support\Pagination;
+use App\Support\Filter;
 
 class GetAllProductUseCase
 {
@@ -12,7 +12,7 @@ class GetAllProductUseCase
         private readonly ProductRepositoryInterface $repository
     ) {}
 
-    public function handle(Pagination $pagination, ProductFilter $filter)
+    public function handle(Pagination $pagination, Filter $filter)
     {
         return $this->repository->getAll($pagination, $filter);
     }

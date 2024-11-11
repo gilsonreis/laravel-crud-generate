@@ -11,14 +11,10 @@ class ProductShowAction extends Controller
 {
     use ApiResponser;
 
-    public function __construct(
-        private readonly ShowProductUseCase $useCase
-    ) {}
-
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request, ShowProductUseCase $useCase, int $id)
     {
         try {
-            $result = $this->useCase->handle($id);
+            $result = $useCase->handle($id);
             return $this->successResponse($result);
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage());

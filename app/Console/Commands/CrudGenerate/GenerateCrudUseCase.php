@@ -90,8 +90,8 @@ class {$useCaseName}
 namespace App\UseCases\\{$directory};
 
 use App\Repositories\\{$directory}\\{$repositoryInterface};
-use App\Types\Pagination;
-use App\Filters\\{$modelName}Filter;
+use App\Support\Pagination;
+use App\Support\Filter;
 
 class {$useCaseName}
 {
@@ -99,7 +99,7 @@ class {$useCaseName}
         private readonly {$repositoryInterface} \$repository
     ) {}
 
-    public function handle(Pagination \$pagination, {$modelName}Filter \$filter)
+    public function handle(Pagination \$pagination, Filter \$filter)
     {
         return \$this->repository->getAll(\$pagination, \$filter);
     }
