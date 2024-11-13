@@ -1,0 +1,21 @@
+{
+    "name": "gilsonreis/laravel-crud-generator",
+    "description": "Gerador de CRUD para Laravel",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Gilsonreis\\LaravelCrudGenerator\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Gilson Reis",
+            "email": "gilsonc.reis@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^9.0|^10.0|^11.0"
+    }
+}
