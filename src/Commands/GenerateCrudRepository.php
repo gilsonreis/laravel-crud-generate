@@ -35,9 +35,6 @@ class GenerateCrudRepository extends Command
             File::makeDirectory(app_path("Repositories/{$directory}"), 0755, true);
         }
 
-        $this->generateFilter();
-        $this->generatePagination();
-
         if ($modelName) {
             $this->generateInterfaceWithCrud($repositoryName, $modelName, $interfacePath);
             $this->generateRepositoryWithCrud($repositoryName, $modelName, $repositoryPath, $filters);
@@ -100,8 +97,8 @@ namespace App\Repositories\\" . Str::studly($modelName) . ";
 
 use App\Models\\$modelName;
 use Illuminate\\Pagination\\LengthAwarePaginator;
-use App\\Support\\Pagination;
-use App\\Support\\Filter;
+use Gilsonreis\\LaravelCrudGenerator\\Support\\Pagination;
+use Gilsonreis\\LaravelCrudGenerator\\Support\\Filter;
 
 class {$repositoryName} implements {$repositoryName}Interface
 {
@@ -221,151 +218,4 @@ class {$repositoryName} implements {$repositoryName}Interface
 
         return $filters;
     }
-
-    private function generateFilter()
-    {
-        $directoryPath = app_path('Support');
-        File::ensureDirectoryExists($directoryPath);
-
-        $filterPath = "{$directoryPath}/Filter.php";
-
-        if (File::exists($filterPath)) {
-            $this->info('O arquivo Filter.php já existe.');
-            return;
-        }
-
-        $filterContent = "<?php
-
-namespace App\Support;
-
-class Filter
-{
-    public function __construct(
-        private ?array \$columns = ['*'],
-        private ?string \$orderColumn = 'created_at',
-        private ?string \$orderDirection = 'asc',
-        private array \$filters = []
-    ) {}
-
-    public function getColumns(): ?array
-    {
-        return \$this->columns;
-    }
-
-    public function setColumns(array \$columns): self
-    {
-        \$this->columns = \$columns;
-        return \$this;
-    }
-
-    public function getOrderColumn(): ?string
-    {
-        return \$this->orderColumn;
-    }
-
-    public function setOrderColumn(string \$orderColumn): self
-    {
-        \$this->orderColumn = \$orderColumn;
-        return \$this;
-    }
-
-    public function getOrderDirection(): ?string
-    {
-        return \$this->orderDirection;
-    }
-
-    public function setOrderDirection(string \$orderDirection): self
-    {
-        if (!in_array(\$orderDirection, ['asc', 'desc'])) {
-            throw new \\DomainException('OrderDirection precisa ser \"asc\" ou \"desc\"');
-        }
-        \$this->orderDirection = \$orderDirection;
-        return \$this;
-    }
-
-    public function getFilters(): array
-    {
-        return \$this->filters;
-    }
-
-    public function setFilters(array \$filters): self
-    {
-        \$this->filters = \$filters;
-        return \$this;
-    }
-}";
-
-        File::put($filterPath, $filterContent);
-        $this->info('Filter.php criado com sucesso.');
-    }
-
-    private function generatePagination()
-    {
-        $directoryPath = app_path('Support');
-        File::ensureDirectoryExists($directoryPath);
-
-        $paginationPath = "{$directoryPath}/Pagination.php";
-
-        if (File::exists($paginationPath)) {
-            $this->info('O arquivo Pagination.php já existe.');
-            return;
-        }
-
-        $paginationContent = "<?php
-
-namespace App\Support;
-
-class Pagination
-{
-    public function __construct(private int \$page = 1, private int \$perPage = 15, private ?bool \$paginate = true)
-    {
-    }
-
-    public function getPage(): int
-    {
-        return \$this->page;
-    }
-
-    public function setPage(int \$page): \Gilsonreis\LaravelCrudGenerator\Support\Pagination
-    {
-        \$this->page = \$page;
-        return \$this;
-    }
-
-    public function getPerPage(): int
-    {
-        return \$this->perPage;
-    }
-
-    public function setPerPage(int \$perPage): \Gilsonreis\LaravelCrudGenerator\Support\Pagination
-    {
-        \$this->perPage = \$perPage;
-        return \$this;
-    }
-
-    public function setPaginate(bool \$setPaginate): \Gilsonreis\LaravelCrudGenerator\Support\Pagination
-    {
-        \$this->paginate = \$setPaginate;
-        return \$this;
-    }
-
-    public function hasPaginate(): bool
-    {
-        return \$this->paginate;
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'page' => \$this->getPage(),
-            'per_page' => \$this->getPerPage(),
-            'paginate' => \$this->hasPaginate(),
-        ];
-    }
-}";
-
-        File::put($paginationPath, $paginationContent);
-        $this->info('Pagination.php criado com sucesso.');
-    }
-
 }

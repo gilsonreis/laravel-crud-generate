@@ -20,9 +20,6 @@ class GenerateFormRequest extends Command
         $modelName = $this->option('model');
         $name = $this->option('name');
 
-        // Verifica e cria o BaseRequest se não existir
-        $this->ensureBaseRequestExists();
-
         if ($modelName) {
             $modelName = Str::studly($modelName);
 
@@ -36,51 +33,6 @@ class GenerateFormRequest extends Command
             $this->generateBlankFormRequest($name);
         } else {
             $this->error('É necessário fornecer --model ou --name.');
-        }
-    }
-
-    private function ensureBaseRequestExists()
-    {
-        $directoryPath = app_path('Http/Requests');
-        File::ensureDirectoryExists($directoryPath);
-
-        $baseRequestPath = "{$directoryPath}/BaseRequest.php";
-
-        if (!File::exists($baseRequestPath)) {
-            $baseRequestContent = "<?php
-
-namespace App\Http\Requests;
-
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Response;
-use Illuminate\Validation\ValidationException;
-
-abstract class BaseRequest extends FormRequest
-{
-    protected \$stopOnFirstFailure = true;
-
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    protected function failedValidation(Validator \$validator)
-    {
-        \$response = new Response([
-            'status' => 'fail',
-            'code' => 400,
-            'data' => [
-                'message' => \$validator->errors()->first()
-            ]
-        ], 422);
-        throw new ValidationException(\$validator, \$response);
-    }
-
-    abstract public function rules(): array;
-}";
-            File::put($baseRequestPath, $baseRequestContent);
-            $this->info('BaseRequest criado com sucesso.');
         }
     }
 
@@ -133,6 +85,8 @@ abstract class BaseRequest extends FormRequest
 
 namespace App\Http\Requests;
 
+use Gilsonreis\LaravelCrudGenerator\Requests\FormRequest;
+
 class {$requestName} extends BaseRequest
 {
     public function rules(): array
@@ -165,6 +119,8 @@ $attributesContent
         $requestContent = "<?php
 
 namespace App\Http\Requests;
+
+use Gilsonreis\LaravelCrudGenerator\Requests\FormRequest;
 
 class {$requestName} extends BaseRequest
 {

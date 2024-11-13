@@ -22,12 +22,6 @@ class GenerateCrudModel extends Command
         $observer = $this->option('observer');
         $factory = $this->option('factory');
 
-        $baseModelPath = app_path('Models/BaseModel.php');
-
-        if (!File::exists($baseModelPath)) {
-            $this->createBaseModel($baseModelPath);
-        }
-
         if (!$tableName || !$label || !$pluralLabel) {
             $this->error('Os parâmetros --table, --label e --plural-label são obrigatórios.');
             return;
@@ -238,6 +232,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Gilsonreis\LaravelCrudGenerator\Models\BaseModel;
 
 class $modelName extends BaseModel
 {
@@ -315,100 +310,5 @@ class $modelName extends BaseModel
 }';
 
         return $modelTemplate;
-    }
-
-    protected function createBaseModel()
-    {
-        $baseModelPath = app_path('Models/BaseModel.php');
-
-        if (file_exists($baseModelPath)) {
-            $this->info("O arquivo BaseModel.php já existe em: $baseModelPath");
-            return;
-        }
-
-        $baseModelContent = <<<'EOD'
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
-
-abstract class BaseModel extends Model
-{
-    /**
-     * Aplica filtros à consulta com base nos parâmetros fornecidos.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $filters
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeApplyFilters($query, array $filters)
-    {
-        foreach ($filters as $field => $value) {
-            if (Str::startsWith($field, '_or')) {
-                $query->where(function ($q) use ($value) {
-                    foreach ($value as $orCondition) {
-                        foreach ($orCondition as $orField => $orValue) {
-                            $this->applyOperator($q, $orField, $orValue, 'orWhere');
-                        }
-                    }
-                });
-            } else {
-                $this->applyOperator($query, $field, $value, 'where');
-            }
-        }
-
-        return $query;
-    }
-
-    /**
-     * Aplica o operador apropriado ao campo e valor fornecidos.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $field
-     * @param mixed $value
-     * @param string $method
-     */
-    protected function applyOperator($query, $field, $value, $method = 'where')
-    {
-        $operators = [
-            '_like'      => ['operator' => 'LIKE', 'value' => '%' . $value . '%'],
-            '_gt'        => ['operator' => '>', 'value' => $value],
-            '_lt'        => ['operator' => '<', 'value' => $value],
-            '_gte'       => ['operator' => '>=', 'value' => $value],
-            '_lte'       => ['operator' => '<=', 'value' => $value],
-            '_in'        => ['method' => $method . 'In', 'value' => explode(',', $value)],
-            '_not_in'    => ['method' => $method . 'NotIn', 'value' => explode(',', $value)],
-            '_null'      => ['operator' => '=', 'value' => null],
-            '_not_null'  => ['operator' => '!=', 'value' => null],
-        ];
-
-        foreach ($operators as $suffix => $operation) {
-            if (Str::endsWith($field, $suffix)) {
-                $actualField = Str::before($field, $suffix);
-                $methodToApply = $operation['method'] ?? $method;
-                $operator = $operation['operator'] ?? null;
-                $query->$methodToApply($actualField, $operator, $operation['value']);
-                return;
-            }
-        }
-
-        if (Str::endsWith($field, '_between')) {
-            $actualField = Str::before($field, '_between');
-            $range = explode(',', $value);
-            if (count($range) === 2) {
-                $query->$method . 'Between'($actualField, [$range[0], $range[1]]);
-            }
-            return;
-        }
-
-        $query->$method($field, '=', $value);
-    }
-}
-EOD;
-
-        file_put_contents($baseModelPath, $baseModelContent);
-        $this->info("BaseModel.php criado com sucesso em: $baseModelPath");
     }
 }

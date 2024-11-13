@@ -89,7 +89,9 @@ class {$useCaseName}
 
 namespace App\UseCases\\{$directory};
 
-use ;use Gilsonreis\LaravelCrudGenerator\Support\Filter;use Gilsonreis\LaravelCrudGenerator\Support\Pagination;{$directory}\\{$repositoryInterface};
+use Gilsonreis\LaravelCrudGenerator\Support\Filter;
+use Gilsonreis\LaravelCrudGenerator\Support\Pagination;
+use App\Repositories\\{$directory}\\{$repositoryInterface};
 
 class {$useCaseName}
 {

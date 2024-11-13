@@ -20,7 +20,7 @@ abstract class BaseRequest extends FormRequest
     {
         $response = new Response([
             'status' => 'fail',
-            'code' => 400,
+            'code' => 422,
             'data' => [
                 'message' => $validator->errors()->first()
             ]
