@@ -1,3 +1,4 @@
+
 # Laravel CRUD Generator
 
 O **Laravel CRUD Generator** é uma biblioteca projetada para automatizar a criação de componentes essenciais de um CRUD, como Models, Repositories, UseCases, Actions e Rotas. Esta documentação fornece um guia passo a passo para usar a biblioteca de forma eficiente.
@@ -44,8 +45,9 @@ php artisan crud:menu
 4. **Gerar Repository**
 5. **Gerar Model**
 6. **Gerar Rotas**
-7. **Sobre**
-8. **Sair**
+7. **Gerar Login (Utiliza Sanctum)**
+8. **Sobre**
+9. **Sair**
 
 Cada opção solicita os parâmetros necessários e executa os comandos correspondentes.
 
@@ -63,12 +65,6 @@ Gera um model com fillables automáticos, casts de data e json, relacionamentos 
 php artisan make:crud-model --table=products --label=Produto --plural-label=Produtos --observer
 ```
 
-### Parâmetros Disponíveis
-- `--table`: Nome da tabela no banco de dados.
-- `--label`: Nome do model (singular).
-- `--plural-label`: Nome plural do model.
-- `--observer`: Adiciona um observer ao model (opcional).
-
 ### 2. Gerar um Repository
 
 Gera um repository baseado em um model especificado:
@@ -76,10 +72,6 @@ Gera um repository baseado em um model especificado:
 ```bash
 php artisan make:crud-repository RepositoryName --model=Product
 ```
-
-### Parâmetros Disponíveis
-- `repositoryName`: Nome do repository.
-- `--model`: Nome do model associado ao repository (opcional).
 
 ### 3. Gerar UseCases
 
@@ -89,17 +81,6 @@ Gera os UseCases de um CRUD completo ou um UseCase em branco:
 php artisan make:crud-use-case --model=Product
 ```
 
-Para um UseCase em branco:
-
-```bash
-php artisan make:crud-use-case --name=ExampleUseCase --directory=Example
-```
-
-### Parâmetros Disponíveis
-- `--model`: Nome do model para gerar o CRUD completo.
-- `--name`: Nome do UseCase em branco.
-- `--directory`: Diretório onde o UseCase em branco será criado.
-
 ### 4. Gerar Actions
 
 Gera as actions de um CRUD ou uma action em branco:
@@ -107,17 +88,6 @@ Gera as actions de um CRUD ou uma action em branco:
 ```bash
 php artisan make:crud-actions --model=Product
 ```
-
-Para uma action em branco:
-
-```bash
-php artisan make:crud-actions --name=ExampleAction --directory=Example
-```
-
-### Parâmetros Disponíveis
-- `--model`: Nome do model para gerar o CRUD.
-- `--name`: Nome da action em branco.
-- `--directory`: Diretório onde a action em branco será criada.
 
 ### 5. Gerar Rotas
 
@@ -127,11 +97,60 @@ Gera um arquivo de rotas para um CRUD completo ou cria um arquivo de rota em bra
 php artisan make:crud-routes --model=Product
 ```
 
-Para um arquivo de rota em branco:
+---
+
+## Gerar o Login
+
+O sistema de autenticação utiliza o Laravel Sanctum e pode ser gerado com o comando:
 
 ```bash
-php artisan make:crud-routes --name=example
+php artisan make:crud-auth
 ```
+
+### Componentes Gerados
+
+1. **Rotas**: Um arquivo de rotas em `app/Routes/AuthRoutes.php`, contendo rotas para login e logout.
+2. **Actions**: Classes para `LoginAction` e `LogoutAction`.
+3. **UseCases**: Classes para `LoginUseCase` e `LogoutUseCase`.
+4. **FormRequest**: Validação para login em `LoginRequest`.
+5. **Services**: Serviço de autenticação usando `SanctumAuthService`.
+6. **Repositories**: Classes `LoginRepository` e `AuthRepository`.
+
+### Exemplo de Rotas Geradas
+
+```php
+Route::prefix('auth')
+    ->name('auth.')
+    ->group(function () {
+        Route::post('/login', LoginAction::class)->name('login');
+        Route::delete('/logout', LogoutAction::class)
+            ->name('logout')
+            ->middleware('auth:sanctum');
+    });
+```
+
+### Testando o Login
+
+#### Login
+
+Endpoint:
+- **URL**: `/api/auth/login`
+- **Método**: `POST`
+- **Corpo**:
+  ```json
+  {
+    "email": "usuario@example.com",
+    "password": "senha"
+  }
+  ```
+
+#### Logout
+
+Endpoint:
+- **URL**: `/api/auth/logout`
+- **Método**: `DELETE`
+- **Headers**:
+    - `Authorization: Bearer {token}`
 
 ---
 
@@ -179,4 +198,3 @@ Contribuições são bem-vindas! Por favor, envie um pull request ou abra uma is
 ## Licença
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE).
-
