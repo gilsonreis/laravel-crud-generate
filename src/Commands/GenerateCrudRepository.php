@@ -69,8 +69,8 @@ interface {$repositoryName}Interface
 namespace App\Repositories\\" . Str::studly($modelName) . ";
 
 use Illuminate\\Pagination\\LengthAwarePaginator;
-use App\\Support\\Pagination;
-use App\\Support\\Filter;
+use Gilsonreis\\LaravelCrudGenerator\\Support\\Pagination;
+use Gilsonreis\\LaravelCrudGenerator\\Support\\Filter;
 
 interface {$repositoryName}Interface
 {

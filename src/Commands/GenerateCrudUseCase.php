@@ -35,7 +35,7 @@ class GenerateCrudUseCase extends Command
             // Gerar UseCases CRUD individuais
             $this->generateGetAllUseCase($modelName, $repositoryInterface, $directory);
             $this->generateCreateUseCase($modelName, $repositoryInterface, $directory);
-            $this->generateReadUseCase($modelName, $repositoryInterface, $directory);
+            $this->generateShowUseCase($modelName, $repositoryInterface, $directory);
             $this->generateUpdateUseCase($modelName, $repositoryInterface, $directory);
             $this->generateDeleteUseCase($modelName, $repositoryInterface, $directory);
 
@@ -138,9 +138,9 @@ class {$useCaseName}
         $this->info("UseCase {$useCaseName} criado com sucesso.");
     }
 
-    private function generateReadUseCase($modelName, $repositoryInterface, $directory)
+    private function generateShowUseCase($modelName, $repositoryInterface, $directory)
     {
-        $useCaseName = "Read{$modelName}UseCase";
+        $useCaseName = "Show{$modelName}UseCase";
         $useCasePath = app_path("UseCases/{$directory}/{$useCaseName}.php");
 
         File::ensureDirectoryExists(app_path("UseCases/{$directory}"));

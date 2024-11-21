@@ -23,6 +23,7 @@ class GenerateCrudMenuChoices extends Command
                     'Gerar Repository',
                     'Gerar Model',
                     'Gerar Rotas',
+                    'Gerar Login (Utiliza Sanctum)',
                     'Sobre',
                     'Sair',
                 ]
@@ -46,6 +47,9 @@ class GenerateCrudMenuChoices extends Command
                     break;
                 case 'Gerar Rotas':
                     $this->generateRoutes();
+                    break;
+                case 'Gerar Login (Utiliza Sanctum)':
+                    $this->generateLogin();
                     break;
                 case 'Sobre':
                     $this->displayAbout();
@@ -222,5 +226,10 @@ class GenerateCrudMenuChoices extends Command
     {
         $this->info("\nPressione qualquer tecla para continuar...");
         readline();
+    }
+
+    private function generateLogin()
+    {
+        Artisan::call('make:crud-auth');
     }
 }

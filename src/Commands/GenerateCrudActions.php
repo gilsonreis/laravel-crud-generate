@@ -61,6 +61,7 @@ class GenerateCrudActions extends Command
 
 namespace App\Http\Actions\\{$directory};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
 use Illuminate\Http\Request;
 
@@ -95,12 +96,13 @@ class {$actionName} extends Controller
 
 namespace App\Http\Actions\\{$modelName};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Support\Filter;
 use Gilsonreis\LaravelCrudGenerator\Support\Pagination;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
 use Illuminate\Http\Request;
 
-{$useCasesNamespace}\\{$useCase};
+use {$useCasesNamespace}\\{$useCase};
 
 class {$actionName} extends Controller
 {
@@ -155,9 +157,10 @@ class {$actionName} extends Controller
 
 namespace App\Http\Actions\\{$modelName};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
 use Illuminate\Http\Request;
-{$useCasesNamespace}\\{$useCase};
+use {$useCasesNamespace}\\{$useCase};
 
 class {$actionName} extends Controller
 {
@@ -196,9 +199,10 @@ class {$actionName} extends Controller
 
 namespace App\Http\Actions\\{$modelName};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
-{$useCasesNamespace}\\{$useCase};
-{$formRequest};
+use {$useCasesNamespace}\\{$useCase};
+use App\Http\Requests\{$formRequest};
 
 class {$actionName} extends Controller
 {
@@ -207,7 +211,7 @@ class {$actionName} extends Controller
     public function __invoke({$formRequest} \$request, {$useCase} \$useCase)
     {
         try {
-            \$result = \$useCase->handle(\$request->validated());
+            \$result = \$useCase->handle(\$request->all());
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -237,9 +241,10 @@ class {$actionName} extends Controller
 
 namespace App\Http\Actions\\{$modelName};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
-{$useCasesNamespace}\\{$useCase};
-{$formRequest};
+use {$useCasesNamespace}\\{$useCase};
+use App\Http\Requests\{$formRequest};
 
 class {$actionName} extends Controller
 {
@@ -248,7 +253,7 @@ class {$actionName} extends Controller
     public function __invoke({$formRequest} \$request, {$useCase} \$useCase, int \$id)
     {
         try {
-            \$result = \$useCase->handle(\$id, \$request->validated());
+            \$result = \$useCase->handle(\$id, \$request->all());
             return \$this->successResponse(\$result);
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
@@ -272,9 +277,10 @@ class {$actionName} extends Controller
 
 namespace App\Http\Actions\\{$modelName};
 
+use App\Http\Controllers\Controller;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
 use Illuminate\Http\Request;
-{$useCasesNamespace}\\{$useCase};
+use {$useCasesNamespace}\\{$useCase};
 
 class {$actionName} extends Controller
 {

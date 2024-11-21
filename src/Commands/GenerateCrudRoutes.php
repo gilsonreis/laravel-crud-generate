@@ -41,6 +41,11 @@ class GenerateCrudRoutes extends Command
 
         File::ensureDirectoryExists(app_path('Routes'));
 
+        $useSanctumMiddleware = $this->confirm("Deseja adicionar o middleware 'auth:sanctum' às rotas do model {$modelName}?", true);
+
+        $middlewareString = $useSanctumMiddleware ? "->middleware('auth:sanctum')" : '';
+
+
         $routeContent = "<?php
 
 use Illuminate\\Support\\Facades\\Route;
@@ -51,7 +56,7 @@ use App\\Http\\Actions\\{$modelName}\\{$modelName}UpdateAction;
 use App\\Http\\Actions\\{$modelName}\\{$modelName}DeleteAction;
 
 Route::prefix('$modelPluralKebab')
-    ->name('{$modelKebab}.')
+    ->name('{$modelKebab}.')$middlewareString
     ->group(function () {
         Route::get('/', {$modelName}GetAllAction::class)->name('index');
         Route::get('/{id}', {$modelName}ShowAction::class)->name('show');
@@ -104,21 +109,17 @@ Route::prefix('$routeKebab')
         $apiRouteFile = base_path('routes/api.php');
         $autoloadStatement = "\n// Carrega automaticamente todas as rotas CRUD em app/Routes\nforeach (glob(app_path('Routes/*.php')) as \$routeFile) {\n    require \$routeFile;\n}\n";
 
-        // Verifica se o arquivo routes/api.php existe; se não, cria com `php artisan install:api`
         if (!File::exists($apiRouteFile)) {
             $this->info('O arquivo routes/api.php não foi encontrado. Criando com `php artisan install:api`...');
             Artisan::call('install:api');
+            $this->info('Pressione Enter para continuar...');
         }
 
-        // Recarrega o conteúdo do arquivo após a criação
         $existingContent = File::get($apiRouteFile);
 
-        // Adiciona a instrução de autoload se ainda não estiver presente
         if (strpos($existingContent, "foreach (glob(app_path('Routes/*.php'))") === false) {
             File::append($apiRouteFile, $autoloadStatement);
             $this->info('Autoload de rotas adicionado ao arquivo routes/api.php.');
-        } else {
-            $this->info('O autoload de rotas já existe no arquivo routes/api.php.');
         }
     }
 }
