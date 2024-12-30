@@ -4,6 +4,7 @@ namespace Gilsonreis\LaravelCrudGenerator\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Input\ArrayInput;
 
 class GenerateCrudMenuChoices extends Command
 {
@@ -64,6 +65,14 @@ class GenerateCrudMenuChoices extends Command
         }
     }
 
+    private function makeCommandRun($command, $commandOptions): int
+    {
+        $command = $this->getApplication()->find($command);
+        $input = new ArrayInput($commandOptions);
+        $input->setInteractive(true);
+        return $command->run($input, $this->output);
+    }
+
     private function generateModel()
     {
         $tableName = $this->ask('Informe o nome da tabela:');
@@ -81,8 +90,7 @@ class GenerateCrudMenuChoices extends Command
             $commandOptions['--observer'] = true;
         }
 
-        Artisan::call('make:crud-model', $commandOptions);
-
+        $this->makeCommandRun('make:crud-model', $commandOptions);
         $this->info("Model {$label} gerado com sucesso!");
     }
 
@@ -98,9 +106,7 @@ class GenerateCrudMenuChoices extends Command
         if (!empty($model)) {
             $commandOptions['--model'] = $model;
         }
-
-        Artisan::call('make:crud-repository', $commandOptions);
-
+        $this->makeCommandRun('make:crud-repository', $commandOptions);
         $this->info("Repository {$repositoryName} gerado com sucesso!");
     }
 
@@ -108,21 +114,23 @@ class GenerateCrudMenuChoices extends Command
     {
         $useCaseType = $this->choice('Deseja gerar um UseCase para um model específico (CRUD) ou um UseCase em branco?', [
             'CRUD para Model',
-            'UseCase em Branco'
+            'UseCase em Branco',
         ]);
 
         if ($useCaseType === 'CRUD para Model') {
             $model = $this->ask('Informe o nome do Model para o CRUD:');
-            Artisan::call('make:crud-use-case', ['--model' => $model]);
+            $this->makeCommandRun('make:crud-use-case', ['--model' => $model]);
             $this->info("UseCases para CRUD do model {$model} gerados com sucesso!");
 
         } else {
             $name = $this->ask('Informe o nome do UseCase em branco:');
             $directory = $this->ask('Informe o diretório para o UseCase em branco:');
-            Artisan::call('make:crud-use-case', [
+
+            $this->makeCommandRun('make:crud-use-case', [
                 '--name' => $name,
                 '--directory' => $directory,
             ]);
+
             $this->info("UseCase em branco {$name} criado no diretório {$directory} com sucesso!");
         }
     }
@@ -131,21 +139,23 @@ class GenerateCrudMenuChoices extends Command
     {
         $actionType = $this->choice('Deseja gerar Actions para um CRUD de model específico ou uma Action em branco?', [
             'CRUD para Model',
-            'Action em Branco'
+            'Action em Branco',
         ]);
 
         if ($actionType === 'CRUD para Model') {
             $model = $this->ask('Informe o nome do Model para o CRUD:');
-            Artisan::call('make:crud-actions', ['--model' => $model]);
+            $this->makeCommandRun('make:crud-actions', ['--model' => $model]);
             $this->info("Actions para CRUD do model {$model} geradas com sucesso!");
 
         } else {
             $name = $this->ask('Informe o nome da Action em branco:');
             $directory = $this->ask('Informe o diretório para a Action em branco:');
-            Artisan::call('make:crud-actions', [
+
+            $this->makeCommandRun('make:crud-actions', [
                 '--name' => $name,
                 '--directory' => $directory,
             ]);
+
             $this->info("Action em branco {$name} criada no diretório {$directory} com sucesso!");
         }
     }
@@ -159,11 +169,11 @@ class GenerateCrudMenuChoices extends Command
 
         if ($routeType === 'CRUD para Model') {
             $model = $this->ask('Informe o nome do Model para gerar as rotas CRUD:');
-            Artisan::call('make:crud-routes', ['--model' => $model]);
+            $this->makeCommandRun('make:crud-routes', ['--model' => $model]);
             $this->info("Rotas CRUD para o Model {$model} geradas com sucesso!");
         } else {
             $name = $this->ask('Informe o nome do arquivo de rota em branco:');
-            Artisan::call('make:crud-routes', ['--name' => $name]);
+            $this->makeCommandRun('make:crud-routes', ['--name' => $name]);
             $this->info("Arquivo de rotas em branco {$name} gerado com sucesso!");
         }
     }
@@ -178,7 +188,8 @@ class GenerateCrudMenuChoices extends Command
 
         // Gerar Model
         $this->info('Gerando Model...');
-        Artisan::call('make:crud-model', [
+
+        $this->makeCommandRun('make:crud-model', [
             '--table' => $tableName,
             '--label' => $label,
             '--plural-label' => $pluralLabel,
@@ -187,22 +198,23 @@ class GenerateCrudMenuChoices extends Command
 
         // Gerar Repository
         $this->info('Gerando Repository...');
-        Artisan::call('make:crud-repository', [
+
+        $this->makeCommandRun('make:crud-repository', [
             'repositoryName' => "{$model}Repository",
             '--model' => $model,
         ]);
 
         // Gerar UseCases
         $this->info('Gerando UseCases...');
-        Artisan::call('make:crud-use-case', ['--model' => $model]);
+        $this->makeCommandRun('make:crud-use-case', ['--model' => $model]);
 
         $this->info('Gerando Rotas...');
-        Artisan::call('make:crud-routes', ['--model' => $model]);
+
+        $this->makeCommandRun('make:crud-routes', ['--model' => $model]);
 
         // Gerar Actions
         $this->info('Gerando Actions...');
-        Artisan::call('make:crud-actions', ['--model' => $model]);
-
+        $this->makeCommandRun('make:crud-actions', ['--model' => $model]);
         $this->info("CRUD completo para o model {$model} gerado com sucesso!");
     }
 
@@ -232,4 +244,5 @@ class GenerateCrudMenuChoices extends Command
     {
         Artisan::call('make:crud-auth');
     }
+
 }
