@@ -1,11 +1,11 @@
 <?php
 
-namespace Gilsonreis\LaravelCrudGenerator\Models;
+namespace Gilsonreis\LaravelCrudGenerator\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-abstract class BaseModel extends Model
+trait BaseModel 
 {
     /**
      * Aplica filtros à consulta com base nos parâmetros fornecidos.

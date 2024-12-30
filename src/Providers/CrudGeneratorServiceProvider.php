@@ -3,6 +3,7 @@
 namespace Gilsonreis\LaravelCrudGenerator\Providers;
 
 use Gilsonreis\LaravelCrudGenerator\Commands\GenerateCrudActions;
+use Gilsonreis\LaravelCrudGenerator\Commands\GenerateCrudJWTLogin;
 use Gilsonreis\LaravelCrudGenerator\Commands\GenerateCrudMenuChoices;
 use Gilsonreis\LaravelCrudGenerator\Commands\GenerateCrudModel;
 use Gilsonreis\LaravelCrudGenerator\Commands\GenerateCrudRbac;
@@ -26,7 +27,8 @@ class CrudGeneratorServiceProvider extends ServiceProvider
             GenerateCrudMenuChoices::class,
             GenerateCrudRoutes::class,
             GenerateCrudSanctumLogin::class,
-            GenerateCrudRbac::class
+            GenerateCrudRbac::class,
+            GenerateCrudJWTLogin::class
         ]);
     }
 

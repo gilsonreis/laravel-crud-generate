@@ -4,28 +4,39 @@ namespace Gilsonreis\LaravelCrudGenerator\Commands;
 
 use Gilsonreis\LaravelCrudGenerator\Support\Helpers;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
-class GenerateCrudSanctumLogin extends Command
+class GenerateCrudJWTLogin extends Command
 {
-    protected $signature = 'make:crud-auth';
-    protected $description = 'Gera componentes de autenticação como Action, UseCase, Repository e FormRequest';
+    protected $signature = 'make:crud-auth-jwt';
+    protected $description = 'Gera componentes de autenticação como Action, UseCase, Repository e FormRequest em JWT';
 
     public function handle()
     {
-        if (!Helpers::isSanctumInstalled()) {
-            $this->error('Laravel Sanctum não está instalado.');
-            $this->info('Esse sistema de login utiliza o Sanctum para autenticar as rotas, então é necessário tê-lo instalado.');
+
+        if (!Helpers::isFirebaseJwtInstalled()) {
+            $this->error('Laravel firebase/php-jwt não está instalado.');
+            $this->info('Esse sistema de login utiliza o JWT para autenticar as rotas, então é necessário tê-lo instalado.');
             $this->line(str_repeat('-', 50));
-            $this->warn('* Para instalar o Sanctum, copie e execute os comandos abaixo:');
-            $this->line('    > composer require laravel/sanctum');
+            $this->warn('* Para instalar o JWT, copie e execute os comandos abaixo:');
+            $this->line('    > composer require firebase/php-jwt');
             $this->line('    > php artisan install:api');
             $this->line(str_repeat('-', 50));
-            $this->line('Estes comandos irá instalar o Sanctum e fazer todas as configurações necessárias.');
-            $this->line('Após instalar o Sanctum, execute novamente o comando para gerar o login.');
+            $this->line('Estes comandos irá instalar o JWT Firebase e fazer todas as configurações necessárias.');
+            $this->line('Após instalar o JWT Firebase, execute novamente o comando para gerar o login.');
             return;
         }
+
+        if (!Helpers::isJwtConfigured()) {
+            $this->error("Configurações do JWT incompletas");
+            $this->line(str_repeat('-', 50));
+            $this->warn('* Para configurar o JWT voce precisa:');
+            $this->info('    > criar uma chave no seu env RSA e uma PUBLIC com a chave privada e publica de assinatura do JWT (veja Online RSA Key Generator)');
+            $this->info('    > chave JWT_EXPIRE, para definir o tempo de expiração do token em segundos, padrão é 86400 (1 dia)');
+            $this->line(str_repeat('-', 50));
+            $this->line('Após configurar o JWT, execute novamente o comando para gerar o login.');
+            return;
+        };
 
         $this->addHasApiTokensTrait();
 
@@ -35,13 +46,89 @@ class GenerateCrudSanctumLogin extends Command
         $this->generateRepository();
         $this->generateSanctumAuthService();
         $this->generateAuthRepository();
-        $this->generateLogoutFiles();
         $this->createAuthRoutes();
         $this->ensureAuthRouteRequire();
         $this->registerBinds();
 
-
         $this->info('Componentes de autenticação gerados com sucesso!');
+    }
+
+    private function addHasApiTokensTrait()
+    {
+        $modelPath = app_path('Models/User.php');
+        if (!File::exists($modelPath)) {
+            $this->erro('O arquivo User.php não foi encontrado em app/Models.');
+            return;
+        }
+
+        $content = File::get($modelPath);
+
+        // Class name to match and replace
+        $newClassName = 'Authenticatable';
+        $requiredUses = [
+            'Illuminate\Foundation\Auth\User as Authenticatable',
+            'Gilsonreis\LaravelCrudGenerator\Traits\BaseModel',
+            'Illuminate\Database\Eloquent\Factories\HasFactory'
+        ];
+        if (preg_match('/namespace\s+[\w\\\]+;/', $content, $matches)) {
+            // Namespace declaration found
+            $namespaceDeclaration = $matches[0];
+            foreach ($requiredUses as $useStatement) {
+                $useLine = "use $useStatement;";
+                if (strpos($content, $useLine) === false) {
+                    // Add the `use` statement below the namespace if it doesn't exist
+                    $content = preg_replace(
+                        '/' . preg_quote($namespaceDeclaration, '/') . '/',
+                        $namespaceDeclaration . "\n" . $useLine,
+                        $content,
+                        1
+                    );
+                }
+            }
+        }
+
+// Replace the class definition
+        $content = preg_replace(
+            '/class\s+\w+\s+extends\s+\w+\s*{/', // Match `class ClassName extends Something {`
+            "class User extends $newClassName {", // Replace with the new class definition
+            $content
+        );
+
+        File::put($modelPath, $content);
+
+        // Verifica se o `HasApiTokens` já está importado
+        if (!str_contains($content, 'use Laravel\\Sanctum\\HasApiTokens;')) {
+            // Insere a importação logo após o namespace
+            $content = preg_replace(
+                '/^namespace\s+App\\\Models;\n/m',
+                "namespace App\\Models;\nuse Laravel\\Sanctum\\HasApiTokens;\n",
+                $content
+            );
+        }
+
+        // Verifica se a trait HasApiTokens já está presente dentro da classe
+        if (preg_match('/class\s+\w+\s+extends\s+\w+\s*{[^}]*\buse\s+HasApiTokens\b/s', $content)) {
+            return;
+        }
+
+        // Localiza o início do bloco da classe
+        if (preg_match('/class\s+\w+\s+extends\s+\w+\s*{/', $content, $matches, PREG_OFFSET_CAPTURE)) {
+            $classBodyStart = $matches[0][1] + strlen($matches[0][0]);
+            // Localiza o último "use" dentro do escopo da classe
+            if (preg_match('/\buse\s+[\w\\\]+;.*$/m', $content, $useMatches, PREG_OFFSET_CAPTURE, $classBodyStart)) {
+                // Adiciona `HasApiTokens` após o último "use"
+                $position = $useMatches[0][1] + strlen($useMatches[0][0]);
+                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" . 'use BaseModel;', $position, 0);
+            } else {
+                // Caso não exista nenhum "use", adiciona logo após a abertura da classe
+                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" .  'use BaseModel;', $classBodyStart, 0);
+            }
+
+            // Salva o conteúdo atualizado no arquivo
+            File::put($modelPath, $updatedContent);
+        } else {
+            $this->error('Não foi possível localizar a classe User no arquivo User.php.');
+        }
     }
 
     private function generateFormRequest()
@@ -173,9 +260,10 @@ namespace App\Repositories\Auth;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
+use \Gilsonreis\LaravelCrudGenerator\Traits\JwtHelper;
 class LoginRepository implements LoginRepositoryInterface
 {
+    use JwtHelper;
     public function authenticate(array \$data)
     {
         if (!Auth::attempt(['email' => \$data['email'], 'password' => \$data['password']])) {
@@ -183,10 +271,8 @@ class LoginRepository implements LoginRepositoryInterface
         }
 
         \$user = Auth::user();
-        return [
-            'token' => \$user->createToken('API Token')->plainTextToken,
-            'user' => \$user,
-        ];
+         return \$this->generateJwt(\$user->toArray(), env('JWT_EXPIRE',86400));
+
     }
 }";
 
@@ -194,52 +280,15 @@ class LoginRepository implements LoginRepositoryInterface
         File::put($repositoryPath, $repositoryContent);
     }
 
-
-    private function addHasApiTokensTrait()
+    private function isFirebaseJwtInstalled(): bool
     {
-        $modelPath = app_path('Models/User.php');
+        return File::exists(base_path('vendor/firebase/php-jwt'));
+    }
 
-        if (!File::exists($modelPath)) {
-            $this->erro('O arquivo User.php não foi encontrado em app/Models.');
-            return;
-        }
-
-        $content = File::get($modelPath);
-
-        // Verifica se o `HasApiTokens` já está importado
-        if (!str_contains($content, 'use Laravel\\Sanctum\\HasApiTokens;')) {
-            // Insere a importação logo após o namespace
-            $content = preg_replace(
-                '/^namespace\s+App\\\Models;\n/m',
-                "namespace App\\Models;\n\nuse Laravel\\Sanctum\\HasApiTokens;\n\nuse Illuminate\\Foundation\\Auth\\User as Authenticatable;",
-                $content
-            );
-        }
-
-        // Verifica se a trait HasApiTokens já está presente dentro da classe
-        if (preg_match('/class\s+\w+\s+extends\s+\w+\s*{[^}]*\buse\s+HasApiTokens\b/s', $content)) {
-            return;
-        }
-
-        // Localiza o início do bloco da classe
-        if (preg_match('/class\s+\w+\s+extends\s+\w+\s*{/', $content, $matches, PREG_OFFSET_CAPTURE)) {
-            $classBodyStart = $matches[0][1] + strlen($matches[0][0]);
-
-            // Localiza o último "use" dentro do escopo da classe
-            if (preg_match('/\buse\s+[\w\\\]+;.*$/m', $content, $useMatches, PREG_OFFSET_CAPTURE, $classBodyStart)) {
-                // Adiciona `HasApiTokens` após o último "use"
-                $position = $useMatches[0][1] + strlen($useMatches[0][0]);
-                $updatedContent = substr_replace($content, PHP_EOL . '    use HasApiTokens;', $position, 0);
-            } else {
-                // Caso não exista nenhum "use", adiciona logo após a abertura da classe
-                $updatedContent = substr_replace($content, PHP_EOL . '    use HasApiTokens;', $classBodyStart, 0);
-            }
-
-            // Salva o conteúdo atualizado no arquivo
-            File::put($modelPath, $updatedContent);
-        } else {
-            $this->error('Não foi possível localizar a classe User no arquivo User.php.');
-        }
+    private function isConfigured()
+    {
+        $privateKey = env('RSA', null);
+        return $privateKey != null;
     }
 
     private function createAuthRoutes()
@@ -260,91 +309,13 @@ Route::prefix('auth')
     ->name('auth.')
     ->group(function () {
         Route::post('/login', LoginAction::class)->name('login');
-        Route::delete('/logout', LogoutAction::class)
-            ->name('logout')
-            ->middleware('auth:sanctum');
     });
 ";
 
         File::put($routeFilePath, $routeContent);
     }
 
-    private function generateLogoutFiles()
-    {
-        $this->generateLogoutUseCase();
-        $this->generateLogoutAction();
-    }
 
-    private function generateLogoutUseCase()
-    {
-        $useCasePath = app_path('UseCases/Auth/LogoutUseCase.php');
-        File::ensureDirectoryExists(app_path('UseCases/Auth'));
-
-        if (!File::exists($useCasePath)) {
-            $content = "<?php
-
-namespace App\UseCases\Auth;
-
-use App\Services\Auth\LogoutService;
-
-class LogoutUseCase
-{
-    public function __construct(private readonly LogoutService \$logoutService)
-    {
-    }
-
-    public function handle(string \$token): bool
-    {
-        return \$this->logoutService->logout(\$token);
-    }
-}";
-            File::put($useCasePath, $content);
-        }
-    }
-
-    private function generateLogoutAction()
-    {
-        $actionPath = app_path('Http/Actions/Auth/LogoutAction.php');
-        File::ensureDirectoryExists(app_path('Http/Actions/Auth'));
-
-        if (!File::exists($actionPath)) {
-            $content = "<?php
-
-namespace App\Http\Actions\Auth;
-
-use App\Http\Controllers\Controller;
-use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
-use App\UseCases\Auth\LogoutUseCase;
-use Illuminate\Http\Request;
-
-class LogoutAction extends Controller
-{
-    use ApiResponser;
-
-    public function __construct(private readonly LogoutUseCase \$logoutUseCase)
-    {
-    }
-
-    public function __invoke(Request \$request)
-    {
-        try {
-            \$token = \$request->bearerToken();
-
-            if (!\$token) {
-                return \$this->errorResponse('Token não encontrado.', 401);
-            }
-
-            \$this->logoutUseCase->handle(\$token);
-
-            return \$this->successResponse('Logout realizado com sucesso.');
-        } catch (\Exception \$e) {
-            return \$this->errorResponse(\$e->getMessage(), 500);
-        }
-    }
-}";
-            File::put($actionPath, $content);
-        }
-    }
 
     private function registerBinds()
     {
