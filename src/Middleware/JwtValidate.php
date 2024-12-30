@@ -47,6 +47,7 @@ class JwtValidate
         } catch (Exception $e) {
             throw new \Gilsonreis\LaravelCrudGenerator\Exception\JwtException($e->getMessage(),401); // $this->errorResponse('Falha no token', Response::HTTP_FORBIDDEN);
         }
+        $request->merge((array)$decoded->scope);
         return $next($request);
     }
 }

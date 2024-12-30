@@ -299,6 +299,8 @@ class LoginRepository implements LoginRepositoryInterface
             return;
         }
 
+        File::ensureDirectoryExists(app_path('Routes'));
+
         $routeContent = "<?php
 
 use Illuminate\Support\Facades\Route;
