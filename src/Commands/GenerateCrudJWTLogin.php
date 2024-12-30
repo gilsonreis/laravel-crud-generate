@@ -271,7 +271,8 @@ class LoginRepository implements LoginRepositoryInterface
         }
 
         \$user = Auth::user();
-         return \$this->generateJwt(\$user->toArray(), env('JWT_EXPIRE',86400));
+         \$returnData = ['user' => \$user->toArray()];
+         return \$this->generateJwt(\$returnData, env('JWT_EXPIRE',86400));
 
     }
 }";
