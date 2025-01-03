@@ -85,7 +85,8 @@ class GenerateFormRequest extends Command
 
 namespace App\Http\Requests;
 
-use Gilsonreis\LaravelCrudGenerator\Requests\FormRequest;
+use Gilsonreis\LaravelCrudGenerator\Requests\BaseRequest;
+
 
 class {$requestName} extends BaseRequest
 {
@@ -120,7 +121,7 @@ $attributesContent
 
 namespace App\Http\Requests;
 
-use Gilsonreis\LaravelCrudGenerator\Requests\FormRequest;
+use Gilsonreis\LaravelCrudGenerator\Requests\BaseRequest;
 
 class {$requestName} extends BaseRequest
 {

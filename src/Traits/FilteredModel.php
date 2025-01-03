@@ -1,11 +1,11 @@
 <?php
 
-namespace Gilsonreis\LaravelCrudGenerator\Models;
+namespace Gilsonreis\LaravelCrudGenerator\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-abstract class BaseModel extends Model
+trait FilteredModel
 {
     /**
      * Aplica filtros à consulta com base nos parâmetros fornecidos.
@@ -60,7 +60,11 @@ abstract class BaseModel extends Model
                 $actualField = Str::before($field, $suffix);
                 $methodToApply = $operation['method'] ?? $method;
                 $operator = $operation['operator'] ?? null;
+                if($operator != null){
                 $query->$methodToApply($actualField, $operator, $operation['value']);
+                }else{
+                    $query->$methodToApply($actualField, $operation['value']);
+                }
                 return;
             }
         }

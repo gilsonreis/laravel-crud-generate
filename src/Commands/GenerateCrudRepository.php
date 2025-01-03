@@ -123,7 +123,7 @@ class {$repositoryName} implements {$repositoryName}Interface
 
     public function find(int \$id): ?$modelName
     {
-        return {$modelName}::query()->find(\$id)?->first();
+        return {$modelName}::query()->find(\$id);
     }
 
     public function create(array \$data): $modelName

@@ -46,8 +46,9 @@ php artisan crud:menu
 5. **Gerar Model**
 6. **Gerar Rotas**
 7. **Gerar Login (Utiliza Sanctum)**
-8. **Sobre**
-9. **Sair**
+8. **Gerar Login (Utiliza JWT)**
+9. **Sobre**
+10. **Sair**
 
 Cada opção solicita os parâmetros necessários e executa os comandos correspondentes.
 
@@ -107,6 +108,14 @@ O sistema de autenticação utiliza o Laravel Sanctum e pode ser gerado com o co
 php artisan make:crud-auth
 ```
 
+## Gerar o Login (JWT)
+
+O sistema de autenticação para uisar JWT, pode ser egrado com o seguinte comando:
+
+```bash
+php artisan make:crud-auth-jwt
+```
+
 ### Componentes Gerados
 
 1. **Rotas**: Um arquivo de rotas em `app/Routes/AuthRoutes.php`, contendo rotas para login e logout.
@@ -129,6 +138,15 @@ Route::prefix('auth')
     });
 ```
 
+### Caso tenha escolhido JWT 
+```php
+Route::prefix('auth')
+    ->name('auth.')
+    ->group(function () {
+        Route::post('/login', LoginAction::class)->name('login');
+    });
+```
+
 ### Testando o Login
 
 #### Login
@@ -144,7 +162,7 @@ Endpoint:
   }
   ```
 
-#### Logout
+#### Logout (somente SANCTUM)
 
 Endpoint:
 - **URL**: `/api/auth/logout`

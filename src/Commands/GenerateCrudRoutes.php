@@ -2,9 +2,10 @@
 
 namespace Gilsonreis\LaravelCrudGenerator\Commands;
 
+use Gilsonreis\LaravelCrudGenerator\Support\Helpers;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class GenerateCrudRoutes extends Command
@@ -40,12 +41,29 @@ class GenerateCrudRoutes extends Command
         $routeFilePath = app_path("Routes/{$modelName}Routes.php");
 
         File::ensureDirectoryExists(app_path('Routes'));
+        $middlewareType = null;
+        $jwtUse = '';
+        if(Helpers::isJwtConfigured()){
+            $useAuthMiddleware = $this->confirm("Deseja adicionar o middleware 'JWT' às rotas do model {$modelName}?", true);
+            if($useAuthMiddleware){
+                $middlewareType = 'JWT';
+            }
+        }else{
+        $useAuthMiddleware = $this->confirm("Deseja adicionar o middleware 'auth:sanctum' às rotas do model {$modelName}?", true);
+        if($useAuthMiddleware){
+            $middlewareType = 'Sanctum';
+        }
+        }
 
-        $useSanctumMiddleware = $this->confirm("Deseja adicionar o middleware 'auth:sanctum' às rotas do model {$modelName}?", true);
+        if($middlewareType == 'JWT'){
+            $middlewareString = $useAuthMiddleware ? "->middleware(JwtValidate::class)" : '';
 
-        $middlewareString = $useSanctumMiddleware ? "->middleware('auth:sanctum')" : '';
-
-
+            $jwtUse = "use Gilsonreis\LaravelCrudGenerator\Middleware\JwtValidate;\n";
+        }else{
+            $middlewareString = $useAuthMiddleware ? "->middleware('auth:sanctum')" : '';
+            
+        }
+        //use Gilsonreis\LaravelCrudGenerator\Middleware\JwtValidate;
         $routeContent = "<?php
 
 use Illuminate\\Support\\Facades\\Route;
@@ -54,7 +72,7 @@ use App\\Http\\Actions\\{$modelName}\\{$modelName}ShowAction;
 use App\\Http\\Actions\\{$modelName}\\{$modelName}CreateAction;
 use App\\Http\\Actions\\{$modelName}\\{$modelName}UpdateAction;
 use App\\Http\\Actions\\{$modelName}\\{$modelName}DeleteAction;
-
+{$jwtUse}
 Route::prefix('$modelPluralKebab')
     ->name('{$modelKebab}.')$middlewareString
     ->group(function () {

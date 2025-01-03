@@ -2,6 +2,7 @@
 
 namespace Gilsonreis\LaravelCrudGenerator\Commands;
 
+use Gilsonreis\LaravelCrudGenerator\Support\Helpers;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -25,6 +26,7 @@ class GenerateCrudMenuChoices extends Command
                     'Gerar Model',
                     'Gerar Rotas',
                     'Gerar Login (Utiliza Sanctum)',
+                    'Gerar Login (Utiliza JWT)',
                     'Sobre',
                     'Sair',
                 ]
@@ -52,6 +54,10 @@ class GenerateCrudMenuChoices extends Command
                 case 'Gerar Login (Utiliza Sanctum)':
                     $this->generateLogin();
                     break;
+                case 'Gerar Login (Utiliza JWT)':
+                    $this->generateLoginJWT();
+                    break;
+
                 case 'Sobre':
                     $this->displayAbout();
                     break;
@@ -130,7 +136,7 @@ class GenerateCrudMenuChoices extends Command
                 '--name' => $name,
                 '--directory' => $directory,
             ]);
-
+           
             $this->info("UseCase em branco {$name} criado no diretório {$directory} com sucesso!");
         }
     }
@@ -144,14 +150,15 @@ class GenerateCrudMenuChoices extends Command
 
         if ($actionType === 'CRUD para Model') {
             $model = $this->ask('Informe o nome do Model para o CRUD:');
-            $this->makeCommandRun('make:crud-actions', ['--model' => $model]);
+            $this->makeCommandRun('make:crud-actions',[ '--model' => $model]);
             $this->info("Actions para CRUD do model {$model} geradas com sucesso!");
 
         } else {
             $name = $this->ask('Informe o nome da Action em branco:');
             $directory = $this->ask('Informe o diretório para a Action em branco:');
+          
 
-            $this->makeCommandRun('make:crud-actions', [
+            $this->makeCommandRun('make:crud-actions',[
                 '--name' => $name,
                 '--directory' => $directory,
             ]);
@@ -169,11 +176,11 @@ class GenerateCrudMenuChoices extends Command
 
         if ($routeType === 'CRUD para Model') {
             $model = $this->ask('Informe o nome do Model para gerar as rotas CRUD:');
-            $this->makeCommandRun('make:crud-routes', ['--model' => $model]);
+            $this->makeCommandRun('make:crud-routes',[ '--model' => $model]);
             $this->info("Rotas CRUD para o Model {$model} geradas com sucesso!");
         } else {
             $name = $this->ask('Informe o nome do arquivo de rota em branco:');
-            $this->makeCommandRun('make:crud-routes', ['--name' => $name]);
+            $this->makeCommandRun('make:crud-routes',[ '--name' => $name]);
             $this->info("Arquivo de rotas em branco {$name} gerado com sucesso!");
         }
     }
@@ -188,18 +195,24 @@ class GenerateCrudMenuChoices extends Command
 
         // Gerar Model
         $this->info('Gerando Model...');
-
-        $this->makeCommandRun('make:crud-model', [
-            '--table' => $tableName,
-            '--label' => $label,
-            '--plural-label' => $pluralLabel,
-            '--observer' => $addObserver,
-        ]);
-
+        switch ($tableName) {
+            case 'users':
+                $this->warn("Classe User não pode ser modificada via CRUD.");
+                break;
+            default:
+                $this->makeCommandRun('make:crud-model', [
+                    '--table' => $tableName,
+                    '--label' => $label,
+                    '--plural-label' => $pluralLabel,
+                    '--observer' => $addObserver,
+                ]);
+                break;
+        }
         // Gerar Repository
         $this->info('Gerando Repository...');
+      
 
-        $this->makeCommandRun('make:crud-repository', [
+        $this->makeCommandRun('make:crud-repository',[
             'repositoryName' => "{$model}Repository",
             '--model' => $model,
         ]);
@@ -242,7 +255,16 @@ class GenerateCrudMenuChoices extends Command
 
     private function generateLogin()
     {
-        Artisan::call('make:crud-auth');
+        if(Helpers::isFirebaseJwtInstalled()){
+            $this->error("Já existe uma configuração de composer para usar JWT, remova e tente novamente");
+            return;
+        }
+        $this->makeCommandRun('make:crud-auth',[]);
     }
 
+    private function generateLoginJWT()
+    {
+      
+        $this->makeCommandRun('make:crud-auth-jwt', []);
+    }
 }
