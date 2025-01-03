@@ -170,7 +170,7 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id);
-            return \$this->successResponse(\$result);
+            return \$this->successResponse(\$result->toArray());
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
