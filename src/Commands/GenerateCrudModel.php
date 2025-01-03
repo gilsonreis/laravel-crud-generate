@@ -232,13 +232,13 @@ namespace App\Models;
 {$useFactory}
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Gilsonreis\LaravelCrudGenerator\Traits\BaseModel;
+use Gilsonreis\LaravelCrudGenerator\Traits\FilteredModel;
 use Illuminate\Database\Eloquent\Model;
 
 class $modelName extends Model
 {
 ";
-        $modelTemplate .= "    use BaseModel;\n\n";
+        $modelTemplate .= "    use FilteredModel;\n\n";
         if ($factory) {
             $modelTemplate .= "    use HasFactory;\n\n";
         } 

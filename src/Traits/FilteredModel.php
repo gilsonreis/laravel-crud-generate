@@ -5,7 +5,7 @@ namespace Gilsonreis\LaravelCrudGenerator\Traits;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-trait BaseModel 
+trait FilteredModel
 {
     /**
      * Aplica filtros à consulta com base nos parâmetros fornecidos.
@@ -60,7 +60,11 @@ trait BaseModel
                 $actualField = Str::before($field, $suffix);
                 $methodToApply = $operation['method'] ?? $method;
                 $operator = $operation['operator'] ?? null;
+                if($operator != null){
                 $query->$methodToApply($actualField, $operator, $operation['value']);
+                }else{
+                    $query->$methodToApply($actualField, $operation['value']);
+                }
                 return;
             }
         }

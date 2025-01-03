@@ -10,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 trait JwtHelper
 {
-    public  function generateJwt(array $dados,  $ttl = null): array
+    public  function generateJwt(?array $dados,  $ttl = null): array
     {
         $ttl ??= env('JWT_EXPIRE', 3600 * 48);
         $expiration = time() + $ttl;
@@ -19,8 +19,11 @@ trait JwtHelper
             'iss' => env('APP_URL', ''),
             'exp' => $expiration,
             'uid' => (string) Uuid::uuid4(),
-            'scope' => $dados,
+
         ];
+        if(!empty($dados)){
+            $payload['scope'] = $dados;
+        }
 
         $privateKey = env('RSA');
 

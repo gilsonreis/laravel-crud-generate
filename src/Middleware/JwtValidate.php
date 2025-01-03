@@ -7,10 +7,10 @@ use Exception;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Gilsonreis\LaravelCrudGenerator\Exception\JwtException;
 use Gilsonreis\LaravelCrudGenerator\Traits\ApiResponser;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Gilsonreis\LaravelCrudGenerator\Exception\JwtException;
 
 class JwtValidate
 {
@@ -40,7 +40,8 @@ class JwtValidate
         } catch (JwtException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode());
         } catch (Exception $e) {
-            return $this->errorResponse('Falha no token', Response::HTTP_FORBIDDEN);
+
+            return $this->errorResponse($e->getMessage(), Response::HTTP_FORBIDDEN);
         }
 
         return $next($request);

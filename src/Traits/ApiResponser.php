@@ -26,8 +26,7 @@ trait ApiResponser
                     'message' => $data
                 ]
             ], $code, $headers, $options);
-        }
-
+        }   
         if (is_array($data) && array_key_exists('data', $data)) {
             return response()->json([
                 'status' => 'success',
@@ -57,9 +56,8 @@ trait ApiResponser
         return response()->json([
             'status' => 'success',
             'code' => $code,
-            'data' => [
-                'results' => $data ?? [],
-            ]
+            'data' =>  $data ?? [],
+            
         ], $code, $headers, $options);
     }
 
