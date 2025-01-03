@@ -255,7 +255,11 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id, \$request->all());
-            return \$this->successResponse(\$result);
+              if (!\$result) {
+                return \$this->errorResponse('Falha ao executar a ação', 404);
+            }
+                return \$this->successResponse('Ação executada com sucesso!');
+
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
@@ -291,7 +295,10 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id);
-            return \$this->successResponse(\$result);
+                 if (!\$result) {
+                return \$this->errorResponse('Falha ao executar a ação', 404);
+            }
+                return \$this->successResponse('Ação executada com sucesso!');
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
