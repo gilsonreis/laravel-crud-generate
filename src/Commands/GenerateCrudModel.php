@@ -61,7 +61,7 @@ class GenerateCrudModel extends Command
         $belongsToManyRelations = $this->detectBelongsToManyRelations($modelName);
         $casts = $this->getCasts($tableName);
 
-        $modelContent = $this->generateModelContent($modelName, $columns, $foreignKeys, $hasManyRelations, $belongsToManyRelations, $casts, $factory);
+        $modelContent = $this->generateModelContent($modelName, $columns, $foreignKeys, $hasManyRelations, $belongsToManyRelations, $casts, $factory, $tableName );
 
         file_put_contents($modelPath, $modelContent);
 
@@ -219,34 +219,37 @@ EOD;
         return $fields;
     }
 
-    private function generateModelContent($modelName, $columns, $foreignKeys, $hasManyRelations, $belongsToManyRelations, $casts, $factory)
+    private function generateModelContent($modelName, $columns, $foreignKeys, $hasManyRelations, $belongsToManyRelations, $casts, $factory,$tableName= null)
     {
         $fillableColumns = array_filter($columns, fn($column) => $column !== 'id');
         $fillableArray = "['" . implode("', '", $fillableColumns) . "']";
         $castsArray = empty($casts) ? '[]' : "[\n        '" . implode("',\n        '", array_map(fn($key, $value) => "$key' => '$value", array_keys($casts), $casts)) . "'\n    ]";
-
+        $useFactory =  ($factory) ? 'use Illuminate\Database\Eloquent\Factories\HasFactory;' :"";
         $modelTemplate = "<?php
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+{$useFactory}
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Gilsonreis\LaravelCrudGenerator\Models\BaseModel;
+use Gilsonreis\LaravelCrudGenerator\Traits\FilteredModel;
+use Illuminate\Database\Eloquent\Model;
 
-class $modelName extends BaseModel
+class $modelName extends Model
 {
 ";
-
+        $modelTemplate .= "    use FilteredModel;\n\n";
         if ($factory) {
-            $modelTemplate .= "    use HasFactory, SoftDeletes;\n\n";
-        } else {
-            $modelTemplate .= "    use SoftDeletes;\n\n";
+            $modelTemplate .= "    use HasFactory;\n\n";
+        } 
+        if(in_array('deleted_at',$columns)){
+             $modelTemplate .= "    use SoftDeletes;\n\n";    
         }
-
         $modelTemplate .= "    protected \$fillable = $fillableArray;\n\n";
         $modelTemplate .= "    protected \$casts = $castsArray;\n\n";
-
+        if($tableName){
+            $modelTemplate .= "    protected \$table = '$tableName';\n\n";
+        }
         $modelTemplate .= '
     public static function boot()
     {

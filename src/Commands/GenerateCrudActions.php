@@ -3,8 +3,8 @@
 namespace Gilsonreis\LaravelCrudGenerator\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class GenerateCrudActions extends Command
@@ -170,7 +170,7 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id);
-            return \$this->successResponse(\$result);
+            return \$this->successResponse(\$result->toArray());
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
@@ -186,10 +186,12 @@ class {$actionName} extends Controller
         $actionName = "{$modelName}CreateAction";
         $useCase = "Create{$modelName}UseCase";
         $actionPath = app_path("Http/Actions/{$modelName}/{$actionName}.php");
+        $requestPath = app_path("Http/Requests/{$formRequest}.php");
+
 
         File::ensureDirectoryExists(app_path("Http/Actions/{$modelName}"));
-
-        if (!class_exists("App\\Http\\Requests\\{$formRequest}")) {
+      
+        if (!file_exists($requestPath)) {
             if ($this->confirm("O FormRequest {$formRequest} não existe. Deseja criá-lo?", true)) {
                 Artisan::call('make:crud-form-request', ['--model' => $modelName]);
             }
@@ -228,10 +230,9 @@ class {$actionName} extends Controller
         $actionName = "{$modelName}UpdateAction";
         $useCase = "Update{$modelName}UseCase";
         $actionPath = app_path("Http/Actions/{$modelName}/{$actionName}.php");
-
+        $requestPath = app_path("Http/Requests/{$formRequest}.php");
         File::ensureDirectoryExists(app_path("Http/Actions/{$modelName}"));
-
-        if (!class_exists("App\\Http\\Requests\\{$formRequest}")) {
+        if (!file_exists($requestPath)) {
             if ($this->confirm("O FormRequest {$formRequest} não existe. Deseja criá-lo?", true)) {
                 Artisan::call('make:crud-form-request', ['--model' => $modelName]);
             }
@@ -254,7 +255,11 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id, \$request->all());
-            return \$this->successResponse(\$result);
+              if (!\$result) {
+                return \$this->errorResponse('Falha ao executar a ação', 404);
+            }
+                return \$this->successResponse('Ação executada com sucesso!');
+
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
@@ -290,7 +295,10 @@ class {$actionName} extends Controller
     {
         try {
             \$result = \$useCase->handle(\$id);
-            return \$this->successResponse(\$result);
+                 if (!\$result) {
+                return \$this->errorResponse('Falha ao executar a ação', 404);
+            }
+                return \$this->successResponse('Ação executada com sucesso!');
         } catch (\Exception \$e) {
             return \$this->errorResponse(\$e->getMessage());
         }
