@@ -2,10 +2,9 @@
 
 namespace Gilsonreis\LaravelCrudGenerator\Traits;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-trait FilteredModel
+trait Filterable
 {
     /**
      * Aplica filtros à consulta com base nos parâmetros fornecidos.

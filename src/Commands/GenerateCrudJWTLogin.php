@@ -67,7 +67,7 @@ class GenerateCrudJWTLogin extends Command
         $newClassName = 'Authenticatable';
         $requiredUses = [
             'Illuminate\Foundation\Auth\User as Authenticatable',
-            'Gilsonreis\LaravelCrudGenerator\Traits\FilteredModel',
+            'Gilsonreis\LaravelCrudGenerator\Traits\Filterable',
             'Illuminate\Database\Eloquent\Factories\HasFactory'
         ];
         if (preg_match('/namespace\s+[\w\\\]+;/', $content, $matches)) {
@@ -118,10 +118,10 @@ class GenerateCrudJWTLogin extends Command
             if (preg_match('/\buse\s+[\w\\\]+;.*$/m', $content, $useMatches, PREG_OFFSET_CAPTURE, $classBodyStart)) {
                 // Adiciona `HasApiTokens` após o último "use"
                 $position = $useMatches[0][1] + strlen($useMatches[0][0]);
-                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" . 'use FilteredModel;', $position, 0);
+                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" . 'use Filterable;', $position, 0);
             } else {
                 // Caso não exista nenhum "use", adiciona logo após a abertura da classe
-                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" .  'use FilteredModel;', $classBodyStart, 0);
+                $updatedContent = substr_replace($content,  "\n\t" . 'use HasApiTokens;' . "\n\t" . 'use HasFactory;' . "\n\t" .  'use Filterable;', $classBodyStart, 0);
             }
 
             // Salva o conteúdo atualizado no arquivo
